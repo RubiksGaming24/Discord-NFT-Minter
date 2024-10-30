@@ -1,0 +1,5 @@
+touch .gitignore
+
+node_modules/
+.env
+nft-images/
