@@ -269,8 +269,6 @@ app.get('/auth/discord/callback', async (req, res) => {
                                                     symbol: 'ETH',
                                                     decimals: 18
                                                 },
-                                                rpcUrls: ['https://sepolia.infura.io/v3/'],
-                                                blockExplorerUrls: ['https://sepolia.etherscan.io']
                                             }]
                                         });
                                     } catch (addError) {
