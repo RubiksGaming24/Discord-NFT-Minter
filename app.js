@@ -237,7 +237,7 @@ app.get('/auth/discord/callback', async (req, res) => {
                 <body>
                     <h1>Welcome, ${userData.username}!</h1>
                     <div class="nft-container">
-                        <img src="/nft-images/${userData.id}.png" alt="Your NFT" style="max-width: 1000px;">
+                        <img src="/nft-images/${userData.id}.png" alt="Your NFT" style="max-width: 1000px;"/>
                     </div>
                     <div class="wallet-container">
                         <button class="mint-button" id="connectButton" onclick="toggleWallet()">Connect Wallet</button>
