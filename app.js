@@ -190,7 +190,7 @@ app.get('/auth/discord/callback', async (req, res) => {
                 <html>
                 <head>
                     <title>Your Discord NFT</title>
-                    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+                    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
                     <style>
                         body {
                             font-family: Arial, sans-serif;
@@ -245,51 +245,40 @@ app.get('/auth/discord/callback', async (req, res) => {
                     </div>
                     <button class="mint-button" id="mintButton" onclick="mintNFT()" style="display: none;">Mint NFT</button>
 
-                    <script>
+                                        <script>
                         let userAddress = null;
                         let signer = null;
                         let mintPrice = null;
 
                         async function checkAndSwitchNetwork() {
-                            const provider = new ethers.BrowserProvider(window.ethereum);
-                            const network = await provider.getNetwork();
-                            const sepoliaChainId = '0xaa36a7'; // Chain ID for Sepolia
-
-                            if (network.chainId.toString() !== sepoliaChainId) {
-                                try {
-                                    await window.ethereum.request({
-                                        method: 'wallet_switchEthereumChain',
-                                        params: [{ chainId: sepoliaChainId }],
-                                    });
-                                    return true;
-                                } catch (switchError) {
-                                    if (switchError.code === 4902) {
-                                        try {
-                                            await window.ethereum.request({
-                                                method: 'wallet_addEthereumChain',
-                                                params: [{
-                                                    chainId: sepoliaChainId,
-                                                    chainName: 'Sepolia Test Network',
-                                                    nativeCurrency: {
-                                                        name: 'Sepolia ETH',
-                                                        symbol: 'SEP',
-                                                        decimals: 18
-                                                    },
-                                                    rpcUrls: ['https://sepolia.infura.io/v3/'],
-                                                    blockExplorerUrls: ['https://sepolia.etherscan.io']
-                                                }],
-                                            });
-                                            return true;
-                                        } catch (addError) {
-                                            alert('Could not add Sepolia network to MetaMask');
-                                            return false;
-                                        }
+                            try {
+                                await window.ethereum.request({
+                                    method: 'wallet_switchEthereumChain',
+                                    params: [{ chainId: '0xaa36a7' }], // Sepolia chainId
+                                });
+                            } catch (switchError) {
+                                if (switchError.code === 4902) {
+                                    try {
+                                        await window.ethereum.request({
+                                            method: 'wallet_addEthereumChain',
+                                            params: [{
+                                                chainId: '0xaa36a7',
+                                                chainName: 'Sepolia Test Network',
+                                                nativeCurrency: {
+                                                    name: 'ETH',
+                                                    symbol: 'ETH',
+                                                    decimals: 18
+                                                },
+                                                rpcUrls: [`https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_API_KEY}`],
+                                                blockExplorerUrls: ['https://sepolia.etherscan.io']
+                                            }]
+                                        });
+                                    } catch (addError) {
+                                        throw new Error('Could not add Sepolia network to MetaMask');
                                     }
-                                    alert('Could not switch to Sepolia network');
-                                    return false;
                                 }
+                                throw new Error('Could not switch to Sepolia network');
                             }
-                            return true;
                         }
 
                         async function connectWallet() {
@@ -299,11 +288,16 @@ app.get('/auth/discord/callback', async (req, res) => {
                             }
 
                             try {
-                                const networkSwitched = await checkAndSwitchNetwork();
-                                if (!networkSwitched) return false;
+                                // Request account access first
+                                await window.ethereum.request({ 
+                                    method: 'eth_requestAccounts' 
+                                });
 
-                                const provider = new ethers.BrowserProvider(window.ethereum);
-                                await provider.send("eth_requestAccounts", []);
+                                // Switch to Sepolia
+                                await checkAndSwitchNetwork();
+
+                                // Now create the provider
+                                const provider = new ethers.providers.Web3Provider(window.ethereum);
                                 signer = await provider.getSigner();
                                 userAddress = await signer.getAddress();
                                 
@@ -353,7 +347,7 @@ app.get('/auth/discord/callback', async (req, res) => {
                             const data = await response.json();
                             if (data.success) {
                                 mintPrice = data.price;
-                                const provider = new ethers.BrowserProvider(window.ethereum);
+                                const provider = new ethers.providers.Web3Provider(window.ethereum);
                                 const balance = await provider.getBalance(userAddress);
                                 const balanceInEth = ethers.formatEther(balance);
 
@@ -370,7 +364,7 @@ app.get('/auth/discord/callback', async (req, res) => {
 
                         async function mintNFT() {
                             try {
-                                const provider = new ethers.BrowserProvider(window.ethereum);
+                                const provider = new ethers.providers.Web3Provider(window.ethereum);
                                 const signer = await provider.getSigner();
                                 const contract = new ethers.Contract("${CONTRACT_ADDRESS}", ${JSON.stringify(contractABI)}, signer);
 
