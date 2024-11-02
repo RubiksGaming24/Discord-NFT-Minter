@@ -244,7 +244,6 @@ app.get('/auth/discord/callback', async (req, res) => {
                         <div id="walletAddress" class="wallet-address"></div>
                     </div>
                     <button class="mint-button" id="mintButton" onclick="mintNFT()" style="display: none;">Mint NFT</button>
-` + `
                     <script>
                         let userAddress = null;
                         let signer = null;
@@ -269,123 +268,6 @@ app.get('/auth/discord/callback', async (req, res) => {
                                                     symbol: 'ETH',
                                                     decimals: 18
                                                 },
-                                            }]
-                                        });
-                                    } catch (addError) {
-                                        throw new Error('Could not add Sepolia network to MetaMask');
-                                    }
-                                }
-                                throw new Error('Could not switch to Sepolia network');
-                            }
-                        }
-
-                        async function connectWallet() {
-                            if (typeof window.ethereum === 'undefined') {
-                                alert('Please install MetaMask to mint NFTs!');
-                                return false;
-                            }
-
-                            try {
-                                // Request account access first
-                                await window.ethereum.request({ 
-                                    method: 'eth_requestAccounts' 
-                                });
-
-                                // Switch to Sepolia
-                                await checkAndSwitchNetwork();
-
-                                // Now create the provider
-                                const provider = new ethers.providers.Web3Provider(window.ethereum);
-                                signer = await provider.getSigner();
-                                userAddress = await signer.getAddress();
-                                
-                                document.getElementById('connectButton').textContent = 'Disconnect Wallet';
-                                document.getElementById('mintButton').style.display = 'block';
-                                document.getElementById('walletAddress').textContent = 'Connected: ' + userAddress.slice(0,6) + '...' + userAddress.slice(-4);
-                                
-                                await checkBalanceAndPrice();
-                                return true;
-                            } catch (error) {
-                                console.error('Error:', error);
-                                alert('Failed to connect wallet: ' + error.message);
-                                return false;
-                            }
-                        }
-
-                        async function disconnectWallet() {
-                            userAddress = null;
-                            signer = null;
-                            document.getElementById('connectButton').textContent = 'Connect Wallet';
-                            document.getElementById('mintButton').style.display = 'none';
-                            document.getElementById('walletAddress').textContent = '';
-                        }
-
-                        async function toggleWallet() {
-                            if (userAddress) {
-                                await disconnectWallet();
-                            } else {
-                                await connectWallet();
-                            }
-                        }
-
-                        async function checkBalanceAndPrice() {
-                            const response = await fetch('/mint', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                },
-                                body: JSON.stringify({
-                                    discordUsername: "${userData.username}",
-                                    imageUrl: "/nft-images/${userData.id}.png",
-                                    walletAddress: userAddress,
-                                    checkOnly: true
-                                })
-                            });
-
-                            const data = await response.json();
-                            if (data.success) {
-                                mintPrice = data.price;
-                                const provider = new ethers.providers.Web3Provider(window.ethereum);
-                                const balance = await provider.getBalance(userAddress);
-                                const balanceInEth = ethers.formatEther(balance);
-
-                                if (parseFloat(balanceInEth) < parseFloat(mintPrice)) {
-                                    alert('Insufficient Sepolia ETH. You need at least ' + mintPrice + ' ETH to mint. Your balance: ' + balanceInEth + ' ETH');
-                                    document.getElementById('mintButton').disabled = true;
-                                    return false;
-                                }
-                                document.getElementById('mintButton').disabled = false;
-                                return true;
-                            }
-                            return false;
-                        }
-
-                        async function mintNFT() {
-                            try {
-                                const provider = new ethers.providers.Web3Provider(window.ethereum);
-                                const signer = await provider.getSigner();
-                                const contract = new ethers.Contract("${CONTRACT_ADDRESS}", ${JSON.stringify(contractABI)}, signer);
-
-                                const approveConfirm = confirm("Do you want to mint this NFT for " + mintPrice + " Sepolia ETH?");
-                                if (!approveConfirm) return;
-
-                                const tx = await contract.mintOwnNFT({ value: ethers.parseEther(mintPrice) });
-                                alert('Please wait while your transaction is being processed...');
-                                await tx.wait();
-                                
-                                alert('NFT minted successfully!');
-                                document.getElementById('mintButton').style.display = 'none';
-                            } catch (error) {
-                                console.error('Error:', error);
-                                alert('Error minting NFT: ' + error.message);
-                            }
-                        }
-                    </script>
-                </body>
-                </html>
-            `);
-                                                rpcUrls: [`https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_API_KEY}`],
-                                                blockExplorerUrls: ['https://sepolia.etherscan.io']
                                             }]
                                         });
                                     } catch (addError) {
