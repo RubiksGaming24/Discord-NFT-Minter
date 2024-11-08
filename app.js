@@ -279,6 +279,7 @@ app.get('/auth/discord/callback', async (req, res) => {
                         }
 
                         async function connectWallet() {
+                            console.log('Attempting to connect wallet...');
                             if (typeof window.ethereum === 'undefined') {
                                 alert('Please install MetaMask to mint NFTs!');
                                 return false;
@@ -300,18 +301,19 @@ app.get('/auth/discord/callback', async (req, res) => {
                                 
                                 document.getElementById('connectButton').textContent = 'Disconnect Wallet';
                                 document.getElementById('mintButton').style.display = 'block';
-                                document.getElementById('walletAddress').textContent = 'Connected: ' + userAddress.slice(0,6) + '...' + userAddress.slice(-4);
+                                document.getElementById('walletAddress').textContent = 'Connected: ' + userAddress.slice(0, 6) + '...' + userAddress.slice(-4);
                                 
                                 await checkBalanceAndPrice();
                                 return true;
                             } catch (error) {
-                                console.error('Error:', error);
+                                console.error('Error connecting wallet:', error);
                                 alert('Failed to connect wallet: ' + error.message);
                                 return false;
                             }
                         }
 
                         async function disconnectWallet() {
+                            console.log('Attempting to disconnect wallet...');
                             userAddress = null;
                             signer = null;
                             document.getElementById('connectButton').textContent = 'Connect Wallet';
@@ -320,6 +322,7 @@ app.get('/auth/discord/callback', async (req, res) => {
                         }
 
                         async function toggleWallet() {
+                            console.log('Toggling wallet connection...');
                             if (userAddress) {
                                 await disconnectWallet();
                             } else {
@@ -403,7 +406,7 @@ app.post('/mint', async (req, res) => {
             });
         }
 
-        // Get the mint price first
+        console.log('Getting mint price...');
         const currentTime = Math.floor(Date.now() / 1000);
         const publicMintingEnd = await contract.PUBLIC_MINTING_END();
         
@@ -415,6 +418,8 @@ app.post('/mint', async (req, res) => {
             const roleEnum = getRoleEnum(userRole);
             mintPrice = await contract.rolePrices(roleEnum);
         }
+
+        console.log('Mint price retrieved:', mintPrice.toString());
 
         // If this is just a check, return the price
         if (checkOnly) {
