@@ -255,7 +255,7 @@ app.get('/auth/discord/callback', async (req, res) => {
 
                         async function init() {
                             web3Modal = new Web3Modal({
-                                cacheProvider: false, // Set to true to cache provider
+                                cacheProvider: false, // Set to true to cache the provider
                                 providerOptions: {} // Add any additional provider options here
                             });
                         }
@@ -263,7 +263,7 @@ app.get('/auth/discord/callback', async (req, res) => {
                         async function connectWallet() {
                             console.log('Attempting to connect wallet...');
                             try {
-                                const instance = await web3Modal.connect();
+                                const instance = await web3Modal.connect(); // Ensure this line is correct
                                 provider = new ethers.providers.Web3Provider(instance);
                                 signer = provider.getSigner();
                                 userAddress = await signer.getAddress();
