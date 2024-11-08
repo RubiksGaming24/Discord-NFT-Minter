@@ -106,9 +106,17 @@ const saveNFTImage = (imageBuffer, userId) => {
     return filePath;
 };
 
-console.log('Initializing provider and signer...');
-const provider = new ethers.JsonRpcProvider(`https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_API_KEY}`);
-const signer = new ethers.Wallet(PRIVATE_KEY, provider);
+let provider;
+let signer;
+let web3Modal;
+
+console.log('Initializing Web3Modal...');
+async function init() {
+    web3Modal = new Web3Modal({
+        cacheProvider: false, // Set to true to cache the provider
+        providerOptions: {} // Add any additional provider options here
+    });
+}
 
 console.log('Contract address:', CONTRACT_ADDRESS);
 console.log('ABI length:', contractABI.length);
@@ -116,6 +124,8 @@ console.log('ABI length:', contractABI.length);
 let contract;
 try {
     console.log('Initializing main contract...');
+    provider = new ethers.JsonRpcProvider(`https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_API_KEY}`);
+    signer = new ethers.Wallet(PRIVATE_KEY, provider);
     contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
     console.log('Contract initialized successfully');
 } catch (error) {
@@ -247,10 +257,8 @@ app.get('/auth/discord/callback', async (req, res) => {
                     <button class="mint-button" id="mintButton" onclick="mintNFT()" style="display: none;">Mint NFT</button>
                     <script>
                         let userAddress = null;
-                        let signer = null;
                         let mintPrice = null;
                         let provider = null;
-                        let web3Modal;
 
                         async function init() {
                             web3Modal = new Web3Modal({
@@ -264,7 +272,7 @@ app.get('/auth/discord/callback', async (req, res) => {
                             try {
                                 const instance = await web3Modal.connect();
                                 provider = new ethers.providers.Web3Provider(instance);
-                                signer = provider.getSigner();
+                                const signer = provider.getSigner();
                                 userAddress = await signer.getAddress();
 
                                 document.getElementById('connectButton').textContent = 'Disconnect Wallet';
@@ -283,7 +291,6 @@ app.get('/auth/discord/callback', async (req, res) => {
                         async function disconnectWallet() {
                             console.log('Attempting to disconnect wallet...');
                             userAddress = null;
-                            signer = null;
                             provider = null;
                             document.getElementById('connectButton').textContent = 'Connect Wallet';
                             document.getElementById('mintButton').style.display = 'none';
@@ -332,7 +339,7 @@ app.get('/auth/discord/callback', async (req, res) => {
 
                         async function mintNFT() {
                             try {
-                                const contract = new ethers.Contract("${CONTRACT_ADDRESS}", ${JSON.stringify(contractABI)}, signer);
+                                const contract = new ethers.Contract("${CONTRACT_ADDRESS}", ${JSON.stringify(contractABI)}, provider.getSigner());
 
                                 const approveConfirm = confirm("Do you want to mint this NFT for " + mintPrice + " Sepolia ETH?");
                                 if (!approveConfirm) return;
@@ -499,3 +506,6 @@ app.listen(PORT, async () => {
         console.error('Error during startup:', error);
     }
 });
+
+// Initialize Web3Modal on server start
+init();
