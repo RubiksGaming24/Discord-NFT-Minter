@@ -29,11 +29,6 @@ const PINATA_SECRET_API_KEY = process.env.PINATA_SECRET_API_KEY;
 const CONTRACT_ADDRESS = '0xFf35268905302Ecf90b175E7277c59cFD471bBc3';
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY;
-const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
-const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
-const DISCORD_REDIRECT_URI = process.env.DISCORD_REDIRECT_URI;
-const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
-const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID;
 
 // NFT Image Generation Function
 const generateNFTImage = async (avatarUrl, userRoles) => {
@@ -108,11 +103,11 @@ const saveNFTImage = (imageBuffer, userId) => {
 
 let provider;
 let signer;
+let contract;
 
 console.log('Contract address:', CONTRACT_ADDRESS);
 console.log('ABI length:', contractABI.length);
 
-let contract;
 try {
     console.log('Initializing main contract...');
     provider = new ethers.JsonRpcProvider(`https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_API_KEY}`);
@@ -123,6 +118,7 @@ try {
     console.error('Error initializing main contract:', error);
 }
 
+// Discord OAuth2 login route
 app.get('/login', (req, res) => {
     const redirectUri = process.env.DISCORD_REDIRECT_URI;
     const authUrl = new URL('https://discord.com/api/oauth2/authorize');
@@ -135,6 +131,7 @@ app.get('/login', (req, res) => {
     res.redirect(authUrl.toString());
 });
 
+// Discord OAuth2 callback route
 app.get('/auth/discord/callback', async (req, res) => {
     const { code } = req.query;
     if (code) {
@@ -258,6 +255,7 @@ app.get('/auth/discord/callback', async (req, res) => {
                                 cacheProvider: false, // Set to true to cache the provider
                                 providerOptions: {} // Add any additional provider options here
                             });
+                            console.log('Web3Modal initialized:', web3Modal); // Debugging line
                         }
 
                         async function connectWallet() {
@@ -365,6 +363,7 @@ app.get('/auth/discord/callback', async (req, res) => {
     }
 });
 
+// Minting endpoint
 app.post('/mint', async (req, res) => {
     try {
         const { discordUsername, imageUrl, walletAddress, checkOnly } = req.body;
@@ -462,10 +461,12 @@ app.post('/mint', async (req, res) => {
     }
 });
 
+// Function to get the highest role of a user
 async function getUserHighestRole(discordUsername) {
-    return 'Newbie';
+    return 'Newbie'; // Placeholder for actual role retrieval logic
 }
 
+// Function to map roles to enums
 function getRoleEnum(role) {
     const roleMap = {
         'newbie': 0,
@@ -478,6 +479,7 @@ function getRoleEnum(role) {
     return roleMap[role.toLowerCase()] || 0;
 }
 
+// Root endpoint
 app.get('/', (req, res) => {
     res.send(`
         <h1>NFT Minting API</h1>
@@ -490,6 +492,7 @@ app.get('/', (req, res) => {
     `);
 });
 
+// Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
     console.log(`Server running on port ${PORT}`);
