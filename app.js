@@ -452,7 +452,7 @@ app.post('/mint', async (req, res) => {
             metadataHash,
             contractAddress: CONTRACT_ADDRESS,
             imageUrl: `ipfs://${imgHash}`,
-            metadataUrl: `ipfs://${metadataHash}`
+            metadataUrl: `ipfs://${metadataHash}` 
         });
     } catch (error) {
         console.error('Detailed error in mint:', error);
