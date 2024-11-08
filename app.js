@@ -191,6 +191,7 @@ app.get('/auth/discord/callback', async (req, res) => {
                 <head>
                     <title>Your Discord NFT</title>
                     <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+                    <script src="https://unpkg.com/web3modal"></script>
                     <style>
                         body {
                             font-family: Arial, sans-serif;
@@ -248,57 +249,24 @@ app.get('/auth/discord/callback', async (req, res) => {
                         let userAddress = null;
                         let signer = null;
                         let mintPrice = null;
+                        let provider = null;
+                        let web3Modal;
 
-                        async function checkAndSwitchNetwork() {
-                            try {
-                                await window.ethereum.request({
-                                    method: 'wallet_switchEthereumChain',
-                                    params: [{ chainId: '0xaa36a7' }], // Sepolia chainId
-                                });
-                            } catch (switchError) {
-                                if (switchError.code === 4902) {
-                                    try {
-                                        await window.ethereum.request({
-                                            method: 'wallet_addEthereumChain',
-                                            params: [{
-                                                chainId: '0xaa36a7',
-                                                chainName: 'Sepolia Test Network',
-                                                nativeCurrency: {
-                                                    name: 'ETH',
-                                                    symbol: 'ETH',
-                                                    decimals: 18
-                                                },
-                                            }]
-                                        });
-                                    } catch (addError) {
-                                        throw new Error('Could not add Sepolia network to MetaMask');
-                                    }
-                                }
-                                throw new Error('Could not switch to Sepolia network');
-                            }
+                        async function init() {
+                            web3Modal = new Web3Modal({
+                                cacheProvider: false, // Set to true to cache provider
+                                providerOptions: {} // Add any additional provider options here
+                            });
                         }
 
                         async function connectWallet() {
                             console.log('Attempting to connect wallet...');
-                            if (typeof window.ethereum === 'undefined') {
-                                alert('Please install MetaMask to mint NFTs!');
-                                return false;
-                            }
-
                             try {
-                                // Request account access first
-                                await window.ethereum.request({ 
-                                    method: 'eth_requestAccounts' 
-                                });
-
-                                // Switch to Sepolia
-                                await checkAndSwitchNetwork();
-
-                                // Now create the provider
-                                const provider = new ethers.providers.Web3Provider(window.ethereum);
-                                signer = await provider.getSigner();
+                                const instance = await web3Modal.connect();
+                                provider = new ethers.providers.Web3Provider(instance);
+                                signer = provider.getSigner();
                                 userAddress = await signer.getAddress();
-                                
+
                                 document.getElementById('connectButton').textContent = 'Disconnect Wallet';
                                 document.getElementById('mintButton').style.display = 'block';
                                 document.getElementById('walletAddress').textContent = 'Connected: ' + userAddress.slice(0, 6) + '...' + userAddress.slice(-4);
@@ -316,6 +284,7 @@ app.get('/auth/discord/callback', async (req, res) => {
                             console.log('Attempting to disconnect wallet...');
                             userAddress = null;
                             signer = null;
+                            provider = null;
                             document.getElementById('connectButton').textContent = 'Connect Wallet';
                             document.getElementById('mintButton').style.display = 'none';
                             document.getElementById('walletAddress').textContent = '';
@@ -347,9 +316,8 @@ app.get('/auth/discord/callback', async (req, res) => {
                             const data = await response.json();
                             if (data.success) {
                                 mintPrice = data.price;
-                                const provider = new ethers.providers.Web3Provider(window.ethereum);
                                 const balance = await provider.getBalance(userAddress);
-                                const balanceInEth = ethers.formatEther(balance);
+                                const balanceInEth = ethers.utils.formatEther(balance);
 
                                 if (parseFloat(balanceInEth) < parseFloat(mintPrice)) {
                                     alert('Insufficient Sepolia ETH. You need at least ' + mintPrice + ' ETH to mint. Your balance: ' + balanceInEth + ' ETH');
@@ -364,14 +332,12 @@ app.get('/auth/discord/callback', async (req, res) => {
 
                         async function mintNFT() {
                             try {
-                                const provider = new ethers.providers.Web3Provider(window.ethereum);
-                                const signer = await provider.getSigner();
                                 const contract = new ethers.Contract("${CONTRACT_ADDRESS}", ${JSON.stringify(contractABI)}, signer);
 
                                 const approveConfirm = confirm("Do you want to mint this NFT for " + mintPrice + " Sepolia ETH?");
                                 if (!approveConfirm) return;
 
-                                const tx = await contract.mintOwnNFT({ value: ethers.parseEther(mintPrice) });
+                                const tx = await contract.mintOwnNFT({ value: ethers.utils.parseEther(mintPrice) });
                                 alert('Please wait while your transaction is being processed...');
                                 await tx.wait();
                                 
@@ -382,6 +348,9 @@ app.get('/auth/discord/callback', async (req, res) => {
                                 alert('Error minting NFT: ' + error.message);
                             }
                         }
+
+                        // Initialize Web3Modal on page load
+                        window.onload = init;
                     </script>
                 </body>
                 </html>
@@ -425,7 +394,7 @@ app.post('/mint', async (req, res) => {
         if (checkOnly) {
             return res.json({
                 success: true,
-                price: ethers.formatEther(mintPrice)
+                price: ethers.utils.formatEther(mintPrice)
             });
         }
 
@@ -476,7 +445,7 @@ app.post('/mint', async (req, res) => {
 
         res.json({ 
             success: true, 
-            price: ethers.formatEther(mintPrice),
+            price: ethers.utils.formatEther(mintPrice),
             metadataHash,
             contractAddress: CONTRACT_ADDRESS,
             imageUrl: `ipfs://${imgHash}`,
