@@ -128,12 +128,15 @@ app.get('/login', (req, res) => {
     authUrl.searchParams.append('response_type', 'code');
     authUrl.searchParams.append('scope', 'identify guilds guilds.members.read');
     
+    console.log('Redirecting to Discord OAuth2:', authUrl.toString());
     res.redirect(authUrl.toString());
 });
 
 // Discord OAuth2 callback route
 app.get('/auth/discord/callback', async (req, res) => {
     const { code } = req.query;
+    console.log('Received code from Discord:', code);
+    
     if (code) {
         try {
             const tokenResponse = await axios.post('https://discord.com/api/oauth2/token', 
@@ -153,6 +156,7 @@ app.get('/auth/discord/callback', async (req, res) => {
             );
 
             const { access_token, token_type } = tokenResponse.data;
+            console.log('Access token received:', access_token);
 
             const userResponse = await axios.get('https://discord.com/api/users/@me', {
                 headers: { Authorization: `${token_type} ${access_token}` },
@@ -174,6 +178,7 @@ app.get('/auth/discord/callback', async (req, res) => {
                     : `https://cdn.discordapp.com/embed/avatars/${parseInt(userData.discriminator) % 5}.png`;
             }
 
+            console.log('Avatar URL:', avatarUrl);
             const nftImageBuffer = await generateNFTImage(avatarUrl, userRoles);
             const savedImagePath = saveNFTImage(nftImageBuffer, userData.id);
 
@@ -181,7 +186,7 @@ app.get('/auth/discord/callback', async (req, res) => {
             console.log('Saved image path:', savedImagePath);
             console.log('User ID:', userData.id);
             console.log('Username:', userData.username);
-            console.log('Avatar URL:', avatarUrl);
+            console.log('User Roles:', userRoles);
 
             res.send(`
                 <!DOCTYPE html>
@@ -252,11 +257,15 @@ app.get('/auth/discord/callback', async (req, res) => {
 
                         async function init() {
                             console.log('Initializing Web3Modal...');
-                            web3Modal = new Web3Modal({
-                                cacheProvider: false, // Set to true to cache the provider
-                                providerOptions: {} // Add any additional provider options here
-                            });
-                            console.log('Web3Modal initialized:', web3Modal); // Debugging line
+                            try {
+                                web3Modal = new Web3Modal({
+                                    cacheProvider: false, // Set to true to cache the provider
+                                    providerOptions: {} // Add any additional provider options here
+                                });
+                                console.log('Web3Modal initialized:', web3Modal); // Debugging line
+                            } catch (error) {
+                                console.error('Error initializing Web3Modal:', error);
+                            }
                         }
 
                         async function connectWallet() {
